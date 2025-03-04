@@ -1,5 +1,4 @@
 from .config import Config, ConfigError
-from nonebot_plugin_userinfo import BotUserInfo, UserInfo
 from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent
 from nonebot.log import logger
 from nonebot.rule import is_type
@@ -13,6 +12,8 @@ import nonebot
 
 require("nonebot_plugin_saa")
 from nonebot_plugin_saa import Text
+require("nonebot_plugin_userinfo")
+from nonebot_plugin_userinfo import BotUserInfo, UserInfo
 
 __plugin_meta__ = PluginMetadata(
     name="拟人回复bot",
