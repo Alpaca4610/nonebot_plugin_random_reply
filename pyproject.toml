@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "nonebot-plugin-chatgpt-turbo"
+name = "nonebot-plugin-random-reply"
 version = "0.0.1"
 description = "随机攻击群友插件"
 authors = ["Alpaca <202396298@qq.com>"]
