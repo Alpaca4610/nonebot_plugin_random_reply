@@ -23,7 +23,8 @@ __plugin_meta__ = PluginMetadata(
     extra={},
     type="application",
     homepage="https://github.com/Alpaca4610/nonebot_plugin_random_reply",
-    supported_adapters={"~onebot.v11"},
+    supported_adapters={"~onebot.v11","~onebot.v12",
+        "~qq"},
 )
 
 
