@@ -4,14 +4,15 @@ from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent
 from nonebot.log import logger
 from nonebot.rule import is_type
 from nonebot.plugin import PluginMetadata
+from nonebot import on_message, require
 from openai import AsyncOpenAI
 import json
 import time
 import random
 import nonebot
-from nonebot_plugin_saa import Text
-from nonebot import on_message, require
+
 require("nonebot_plugin_saa")
+from nonebot_plugin_saa import Text
 
 __plugin_meta__ = PluginMetadata(
     name="拟人回复bot",
