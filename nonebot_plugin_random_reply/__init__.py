@@ -4,20 +4,22 @@ from nonebot.log import logger
 from nonebot.rule import Rule, to_me
 from nonebot.plugin import PluginMetadata
 from nonebot import on_message, require
+from nonebot.exception import FinishedException
 from openai import AsyncOpenAI
 import json
 import time
 import random
 import nonebot
+import httpx
 
 require("nonebot_plugin_saa")
-from nonebot_plugin_saa import Text
+from nonebot_plugin_saa import Text,Image
 require("nonebot_plugin_userinfo")
 from nonebot_plugin_userinfo import BotUserInfo, UserInfo
 
 __plugin_meta__ = PluginMetadata(
     name="拟人回复bot",
-    description="根据群聊语境随机攻击群友",
+    description="根据群聊语境随机攻击群友，基于llm选择表情包回复",
     usage="""
     配置好后bot随机攻击群友，@机器人也可触发
     """,
@@ -52,6 +54,9 @@ history_lens = plugin_config.reply_lens
 reply_pro = plugin_config.reply_pro
 whitelsit = plugin_config.random_re_g
 
+meme_url = plugin_config.random_meme_url
+meme_token = plugin_config.random_meme_token
+
 if plugin_config.reply_prompt == "":
     prompt = default_prompt
 else:
@@ -82,6 +87,34 @@ to_me_reply = on_message(
     permission=GROUP
 )
 
+async def generate_image(prompt):
+    url = meme_url
+    headers = {
+        "Authorization": f"Bearer {meme_token}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "model": "6615735eaa7af4f70cf3a872",
+        "prompt": prompt
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=60) as client:
+            response = await client.post(url, headers=headers, json=data)
+            response.raise_for_status()
+            result = response.json()
+            if "data" in result and len(result["data"]) > 0:
+                return result["data"][0]["url"]
+            else:
+                logger.error("生成失败，响应数据:", result)
+    except httpx.RequestError as e:
+        logger.error(f"请求错误: {e}")
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP 错误响应: {e.response.status_code}")
+    except Exception as e:
+        logger.error(f"生成图片未知错误: {e}")
+        return None
+    return None
 
 def convert_chat_history(history):
     converted = []
@@ -126,7 +159,18 @@ async def handle_whats_talk(bot: Bot, event: GroupMessageEvent, user_info: UserI
     except Exception as e:
         logger.error("随机回复插件出错"+str(e))
         return
-    await Text(reply).finish()
+    if meme_url == "":
+        await Text(reply).finish()
+    else:
+        try:
+            await Text(reply).send()
+            if meme_url := await generate_image(reply):
+                await Image(meme_url).finish()
+        except FinishedException:
+            raise
+        except Exception as e:
+            logger.error(f"消息处理异常: {e}")
+            return
 
 ## 参考了聊天记录总结插件内获取聊天记录的代码
 async def get_history_chat(bot: Bot, group_id: int):
