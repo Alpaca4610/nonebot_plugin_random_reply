@@ -1,7 +1,7 @@
 from .config import Config, ConfigError
-from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent
+from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent,GROUP
 from nonebot.log import logger
-from nonebot.rule import is_type
+from nonebot.rule import Rule, to_me
 from nonebot.plugin import PluginMetadata
 from nonebot import on_message, require
 from openai import AsyncOpenAI
@@ -19,14 +19,13 @@ __plugin_meta__ = PluginMetadata(
     name="拟人回复bot",
     description="根据群聊语境随机攻击群友",
     usage="""
-    配置好后bot随机攻击群友
+    配置好后bot随机攻击群友，@机器人也可触发
     """,
     config=Config,
     extra={},
     type="application",
     homepage="https://github.com/Alpaca4610/nonebot_plugin_random_reply",
-    supported_adapters={"~onebot.v11","~onebot.v12",
-        "~qq"},
+    supported_adapters={"~onebot.v11"},
 )
 
 
@@ -58,11 +57,31 @@ if plugin_config.reply_prompt == "":
 else:
     prompt = plugin_config.reply_prompt
 
+async def random_rule(event: GroupMessageEvent) -> bool:
+    if str(event.group_id) in whitelsit and random.random() < reply_pro:
+        return True
+    return False
+
+async def to_me_rule(event: GroupMessageEvent) -> bool:
+    if str(event.group_id) in whitelsit:
+        return True
+    return False
+
+
 random_reply = on_message(
     priority=999,
-    rule=is_type(GroupMessageEvent),
-    block=True
+    rule=Rule(random_rule),
+    block=True,
+    permission=GROUP
 )
+
+to_me_reply = on_message(
+    rule= Rule(to_me_rule) & to_me(),
+    priority=998,
+    block=True,
+    permission=GROUP
+)
+
 
 def convert_chat_history(history):
     converted = []
@@ -92,28 +111,22 @@ def convert_chat_history(history):
         result.append(json_str[1:-1])
     return "\n".join(result)
 
-
+@to_me_reply.handle()
 @random_reply.handle()
-async def handle_whats_talk(bot: Bot, event: GroupMessageEvent, user_info: UserInfo = BotUserInfo(),):
-    group_id = event.group_id
-    if str(group_id) not in whitelsit:
-        return
-    if random.random() < reply_pro:
-        try:
-            messages = await get_history_chat(bot, group_id)
-            if not messages:
-                logger.error("随机回复插件未获取到聊天记录")
-                return
-            reply = await get_res(messages, user_info.user_displayname)
-            if not reply:
-                logger.error("随机回复插件生成回复失败")
-                return
-        except Exception as e:
-            logger.error("随机回复插件出错"+str(e))
+async def handle_whats_talk(bot: Bot, event: GroupMessageEvent, user_info: UserInfo = BotUserInfo()):
+    try:
+        messages = await get_history_chat(bot, event.group_id)
+        if not messages:
+            logger.error("随机回复插件未获取到聊天记录")
             return
-        await Text(reply).finish()
-    else:
+        reply = await get_res(messages, user_info.user_displayname)
+        if not reply:
+            logger.error("随机回复插件生成回复失败")
+            return
+    except Exception as e:
+        logger.error("随机回复插件出错"+str(e))
         return
+    await Text(reply).finish()
 
 ## 参考了聊天记录总结插件内获取聊天记录的代码
 async def get_history_chat(bot: Bot, group_id: int):
