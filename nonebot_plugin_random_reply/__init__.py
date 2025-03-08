@@ -3,7 +3,7 @@ from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent,GROUP
 from nonebot.log import logger
 from nonebot.rule import Rule, to_me
 from nonebot.plugin import PluginMetadata
-from nonebot import on_message, require
+from nonebot import on_message, require, get_plugin_config
 from nonebot.exception import FinishedException
 from openai import AsyncOpenAI
 import json
@@ -38,7 +38,7 @@ default_prompt = """【任务规则】
 4. 输出必须为纯文本，禁止任何格式标记或前缀
 5. 当出现多个话题时，优先回应最新的发言内容"""
 
-plugin_config = Config.parse_obj(nonebot.get_driver().config.dict())
+plugin_config = get_plugin_config(Config)
 
 if not plugin_config.oneapi_key:
     raise ConfigError("请配置大模型使用的KEY")
