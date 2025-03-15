@@ -6,6 +6,7 @@ from nonebot.plugin import PluginMetadata
 from nonebot import on_message, require, get_plugin_config
 from nonebot.exception import FinishedException
 from openai import AsyncOpenAI
+from pathlib import Path
 import json
 import time
 import random
@@ -38,6 +39,30 @@ default_prompt = """【任务规则】
 4. 输出必须为纯文本，禁止任何格式标记或前缀
 5. 当出现多个话题时，优先回应最新的发言内容"""
 
+def load_plugin_config(file_path: str):
+    if not file_path.strip():
+        return default_prompt
+    try:
+        path = Path(file_path)
+        if not path.is_file():
+            logger.error("随机回复插件prompt文件路径有误")
+            return default_prompt
+        
+        with open(path, 'r', encoding='utf-8') as f:
+            content = f.read().strip()
+            if not content:
+                logger.error("随机回复插件prompt文件为空")
+                return default_prompt
+            return content
+            
+    except (FileNotFoundError, OSError):
+        logger.error("随机回复插件prompt文件未找到")
+        return default_prompt
+    except Exception as e:
+        logger.error(f"随机回复插件prompt导入错误：{str(e)}")
+        return default_prompt
+
+
 plugin_config = get_plugin_config(Config)
 
 if not plugin_config.oneapi_key:
@@ -57,10 +82,8 @@ whitelsit = plugin_config.random_re_g
 meme_url = plugin_config.random_meme_url
 meme_token = plugin_config.random_meme_token
 
-if plugin_config.reply_prompt == "":
-    prompt = default_prompt
-else:
-    prompt = plugin_config.reply_prompt
+prompt = load_plugin_config(plugin_config.reply_prompt_url)
+logger.info("随机回复插件使用prompt：", prompt)
 
 async def random_rule(event: GroupMessageEvent) -> bool:
     if str(event.group_id) in whitelsit and random.random() < reply_pro:
@@ -86,6 +109,7 @@ to_me_reply = on_message(
     block=True,
     permission=GROUP
 )
+
 
 async def generate_image(prompt):
     url = meme_url
@@ -146,7 +170,7 @@ def convert_chat_history(history):
 
 @to_me_reply.handle()
 @random_reply.handle()
-async def handle_whats_talk(bot: Bot, event: GroupMessageEvent, user_info: UserInfo = BotUserInfo()):
+async def handle(bot: Bot, event: GroupMessageEvent, user_info: UserInfo = BotUserInfo()):
     try:
         messages = await get_history_chat(bot, event.group_id)
         if not messages:
@@ -164,8 +188,8 @@ async def handle_whats_talk(bot: Bot, event: GroupMessageEvent, user_info: UserI
     else:
         try:
             await Text(reply).send()
-            if meme_url := await generate_image(reply):
-                await Image(meme_url).finish()
+            if image_url := await generate_image(reply):
+                await Image(image_url).finish()
         except FinishedException:
             raise
         except Exception as e:

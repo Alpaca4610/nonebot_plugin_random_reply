@@ -9,7 +9,7 @@ class Config(BaseModel):
     
     reply_lens: int = 30 # 参考的聊天记录长度
     reply_pro: float = 0.08   # 随机回复概率
-    reply_prompt: str = ""
+    reply_prompt_url: str = ""
     
     ## 表情包
     random_meme_url: str = "" # 用于llm选择表情包的glm-free-api地址

@@ -68,7 +68,7 @@ random_re_g = ["123456789","987654321"]  # 启用随机回复的群聊白名单
 ```
 reply_lens = 30 # 参考的聊天记录长度
 reply_pro = 0.08   # 随机回复概率，取值范围0~1，越大回复概率越高
-reply_prompt = ""  #自定义bot的回复风格prompt
+reply_prompt_url = ""  # 自定义bot的回复风格prompt的txt文件的**绝对路径**
 ```
 ## 表情包配置（可以不配置，不影响文字回复）：
 根据[此处](https://github.com/LLM-Red-Team/glm-free-api?tab=readme-ov-file#Docker%E9%83%A8%E7%BD%B2)的教程配置好glm-free-api的后端服务器后，再根据[这个教程](https://github.com/LLM-Red-Team/glm-free-api?tab=readme-ov-file#%E6%8E%A5%E5%85%A5%E5%87%86%E5%A4%87)获取chatglm的token。得到后端服务器地址和chatglm的token后，在bot配置文件中追加：
