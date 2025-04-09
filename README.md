@@ -13,6 +13,7 @@
 - 根据当前语境在群聊内随机攻击群友
 - 可以更换回复风格prompt自定义bot的说话风格随机拟人回复
 - 基于ChatGLM大模型智能体选择表情包拟人回复，功能实现使用了[该博客](https://www.vinlic.com/p/47461/#%E5%88%9B%E5%BB%BA%E6%99%BA%E8%83%BD%E4%BD%93)的思路和[该项目](https://github.com/LLM-Red-Team/emo-visual-data)的表情包视觉标注。使用[glm-free-api](https://github.com/LLM-Red-Team/glm-free-api)进行api轻量化调用。
+- 支持Gemini和oneapi格式的LLM
 
 > "有什么让LLM更拟人的方案？
 >
@@ -57,10 +58,15 @@
 
 在Bot根目录下的.env文件中追加如下内容：
 ## 必填内容：
+#### 回复模型支持oneapi格式的模型和Gemini，只填oneapi_key则使用指定的oneapi格式的模型，只填gemini_key则使用对应的gemini模型，两者都填则默认使用oneapi格式的模型，二选一填即可
 ```
-oneapi_key = ""  # API KEY
+oneapi_key = ""  # OneAPI KEY
 oneapi_url = ""  # llm提供商地址，使用deepseek请填写"https://api.deepseek.com"，使用硅基流动请填写"https://api.siliconflow.cn/v1"，使用OpenAI官方服务不需要填写
 oneapi_model = "deepseek-chat" # 使用的语言大模型，建议使用ds-v3模型兼顾质量和成本
+
+gemini_model = "gemini-2.0-flash" # Gemini模型，不填默认使用gemini-2.0-flash达到较好的效果
+gemini_key = ""  # Gemini KEY
+
 random_re_g = ["123456789","987654321"]  # 启用随机回复的群聊白名单
 ```
 
