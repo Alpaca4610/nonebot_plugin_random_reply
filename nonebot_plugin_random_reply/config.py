@@ -16,8 +16,9 @@ class Config(BaseModel):
     reply_prompt_url: str = ""
     
     ## 表情包
-    random_meme_url: str = "" # 用于llm选择表情包的glm-free-api地址
-    random_meme_token : str = "" # glm-free-api的token
+    # random_meme_url: str = "" # 用于llm选择表情包的glm-free-api地址
+    # random_meme_token : str = "" # glm-free-api的token
 
+    meme_enable: bool = True # 是否使用第三方斗图API回复表情包
 class ConfigError(Exception):
     pass

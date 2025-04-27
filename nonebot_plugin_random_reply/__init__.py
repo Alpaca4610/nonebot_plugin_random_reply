@@ -145,8 +145,10 @@ history_lens = plugin_config.reply_lens
 reply_pro = plugin_config.reply_pro
 whitelsit = plugin_config.random_re_g
 
-meme_url = plugin_config.random_meme_url
-meme_token = plugin_config.random_meme_token
+# meme_url = plugin_config.random_meme_url
+# meme_token = plugin_config.random_meme_token
+
+meme_enable = plugin_config.meme_enable
 
 prompt = load_plugin_config(plugin_config.reply_prompt_url)
 logger.info("随机回复插件使用prompt："+ prompt)
@@ -173,31 +175,71 @@ to_me_reply = on_message(
 )
 
 
-async def generate_image(prompt):
-    url = meme_url
-    headers = {
-        "Authorization": f"Bearer {meme_token}",
-        "Content-Type": "application/json",
-    }
-    data = {"model": "6615735eaa7af4f70cf3a872", "prompt": prompt}
+## LLM表情包
+# async def generate_image(prompt):
+#     url = meme_url
+#     headers = {
+#         "Authorization": f"Bearer {meme_token}",
+#         "Content-Type": "application/json",
+#     }
+#     data = {"model": "6615735eaa7af4f70cf3a872", "prompt": prompt}
 
+#     try:
+#         async with httpx.AsyncClient(timeout=60) as client:
+#             response = await client.post(url, headers=headers, json=data)
+#             response.raise_for_status()
+#             result = response.json()
+#             if "data" in result and len(result["data"]) > 0:
+#                 return result["data"][0]["url"]
+#             else:
+#                 logger.error("生成失败，响应数据:", result)
+#     except httpx.RequestError as e:
+#         logger.error(f"请求错误: {e}")
+#     except httpx.HTTPStatusError as e:
+#         logger.error(f"HTTP 错误响应: {e.response.status_code}")
+#     except Exception as e:
+#         logger.error(f"生成图片未知错误: {e}")
+#         return None
+#     return None
+
+import httpx
+import random
+import asyncio
+
+async def generate_image(content):
+    url = f"https://doutu.lccyy.com/doutu/items?keyword={content}&pageNum=1&pageSize=30"
+    
     try:
-        async with httpx.AsyncClient(timeout=60) as client:
-            response = await client.post(url, headers=headers, json=data)
+        # 使用异步上下文管理器管理连接
+        async with httpx.AsyncClient(timeout=10) as client:
+            response = await client.get(url)
             response.raise_for_status()
-            result = response.json()
-            if "data" in result and len(result["data"]) > 0:
-                return result["data"][0]["url"]
-            else:
-                logger.error("生成失败，响应数据:", result)
-    except httpx.RequestError as e:
-        logger.error(f"请求错误: {e}")
+            
+            data = response.json()
+            if not isinstance(data, dict):
+                raise ValueError("Invalid JSON structure")
+
+            items = data.get("items", [])
+            if not items: 
+                return ""
+
+            remaining_items = items[1:] if len(items) > 1 else []
+            if not remaining_items:
+                return ""
+
+            pool = remaining_items[:5] if len(remaining_items) >=5 else remaining_items
+            selected = random.choice(pool)
+            return selected.get("url")
+
     except httpx.HTTPStatusError as e:
-        logger.error(f"HTTP 错误响应: {e.response.status_code}")
+        logger.error(f"表情包HTTP错误: {e.response.status_code} {e.request.url}")
+    except httpx.RequestError as e:
+        logger.error(f"请求表情包失败: {e.__class__.__name__} {e.request.url}")
+    except (KeyError, ValueError, IndexError) as e:
+        logger.error(f"表情包数据解析失败: {e}")
     except Exception as e:
-        logger.error(f"生成图片未知错误: {e}")
-        return None
-    return None
+        logger.error(f"表情包未知错误: {e}")
+    return ""
 
 
 def convert_chat_history(history):
@@ -243,8 +285,11 @@ async def handle(
     except Exception as e:
         logger.error("随机回复插件出错" + str(e))
         return
-    if meme_url == "":
+    # if meme_url == "":
+    #     await Text(reply).finish()
+    if not meme_enable:
         await Text(reply).finish()
+    
     else:
         try:
             await Text(reply).send()

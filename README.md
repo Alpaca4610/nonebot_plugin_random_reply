@@ -13,7 +13,7 @@
 - 根据当前语境在群聊内随机攻击群友
 - 可以更换回复风格prompt自定义bot的说话风格随机拟人回复
 - ~~基于ChatGLM大模型智能体选择表情包拟人回复，功能实现使用了[该博客](https://www.vinlic.com/p/47461/#%E5%88%9B%E5%BB%BA%E6%99%BA%E8%83%BD%E4%BD%93)的思路和[该项目](https://github.com/LLM-Red-Team/emo-visual-data)的表情包视觉标注。使用[glm-free-api](https://github.com/LLM-Red-Team/glm-free-api)进行api轻量化调用。~~
-- 目前表情包功能暂不可用
+- 目前LLM选择表情包功能暂不可用，换用第三方斗图API
 - 支持Gemini和oneapi格式的LLM
 
 > "有什么让LLM更拟人的方案？
@@ -31,12 +31,14 @@
 
 # 效果
 <img src="demo2.jpg" width="40%">
-<img src="demo5.png" width="40%">
+<!-- <img src="demo5.png" width="40%"> -->
 <img src="demo4.jpg" width="40%">
-<img src="demo6.png" width="40%">
+<!-- <img src="demo6.png" width="40%"> -->
 <img src="demo1.jpg" width="40%">
 <img src="demo3.jpg" width="40%">
 
+斗图API表情包效果：
+<img src="demo7.png" width="40%">
 
 # 安装
 
@@ -73,16 +75,17 @@ random_re_g = ["123456789","987654321"]  # 启用随机回复的群聊白名单
 
 ## 可选内容（嫌麻烦可以不看）：
 ```
+meme_enable = True # 是否回复表情包（斗图API）,改成False关闭发送表情包
 reply_lens = 30 # 参考的聊天记录长度
 reply_pro = 0.08   # 随机回复概率，取值范围0~1，越大回复概率越高
 reply_prompt_url = ""  # 自定义bot的回复风格prompt的txt文件的**绝对路径**
 ```
- ~~表情包配置（可以不配置，不影响文字回复）：~~ （表情包功能暂不可用）
-根据[此处](https://github.com/LLM-Red-Team/glm-free-api?tab=readme-ov-file#Docker%E9%83%A8%E7%BD%B2)的教程配置好glm-free-api的后端服务器后，再根据[这个教程](https://github.com/LLM-Red-Team/glm-free-api?tab=readme-ov-file#%E6%8E%A5%E5%85%A5%E5%87%86%E5%A4%87)获取chatglm的token。得到后端服务器地址和chatglm的token后，在bot配置文件中追加：
-```
+<!-- ~~LLM表情包配置（可以不配置，不影响文字回复）： （表情包功能暂不可用）
+根据[此处](https://github.com/LLM-Red-Team/glm-free-api?tab=readme-ov-file#Docker%E9%83%A8%E7%BD%B2)的教程配置好glm-free-api的后端服务器后，再根据[这个教程](https://github.com/LLM-Red-Team/glm-free-api?tab=readme-ov-file#%E6%8E%A5%E5%85%A5%E5%87%86%E5%A4%87)获取chatglm的token。得到后端服务器地址和chatglm的token后，在bot配置文件中追加：~~ -->
+<!-- ```
 random_meme_url = "http://xxx.xxx.xxx.xxx:xxxx/v1/images/generations"    # 用于llm选择表情包的glm-free-api地址
 random_meme_token = ""     # glm-free-api的token
-```
+``` -->
 
 # 使用方法
 - 填好配置文件和群聊白名单后，bot就会根据当前话题随机攻击群友
