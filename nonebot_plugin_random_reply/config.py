@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, Union, List
+from typing import Optional, Dict, List
 
 class Config(BaseModel):
     oneapi_key: Optional[str] = ""  # OneAPI KEY
@@ -12,13 +12,17 @@ class Config(BaseModel):
     random_re_g: List[str] = [""]  # 启用随机回复的白名单
     
     reply_lens: int = 30 # 参考的聊天记录长度
-    reply_pro: float = 0.08   # 随机回复概率
+    reply_pro: float = 0.05   # 默认随机回复概率
+    group_reply_pro: Dict[str, float] = {}  # 分群回复概率配置
     reply_prompt_url: str = ""
     
-    ## 表情包
-    # random_meme_url: str = "" # 用于llm选择表情包的glm-free-api地址
-    # random_meme_token : str = "" # glm-free-api的token
+    group_reply_prefix: str = "" # 群聊回复前缀，填写此处后@机器人将不会触发回复
+    
+    # LLM表情包，填写下面的内容开启LLM选择表情包，否则使用第三方API
+    random_meme_url: str = "" # 用于llm选择表情包的glm-free-api地址
+    random_meme_token : str = "" # glm-free-api的token
 
+    # 表情包开关
     meme_enable: bool = True # 是否使用第三方斗图API回复表情包
 class ConfigError(Exception):
     pass

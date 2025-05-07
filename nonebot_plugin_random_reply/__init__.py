@@ -1,9 +1,9 @@
 from .config import Config, ConfigError
 from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, GROUP
 from nonebot.log import logger
-from nonebot.rule import Rule, to_me
+from nonebot.rule import Rule
 from nonebot.plugin import PluginMetadata
-from nonebot import on_message, require, get_plugin_config
+from nonebot import on_message, require, get_plugin_config, on_startswith
 from nonebot.exception import FinishedException
 from openai import AsyncOpenAI
 from typing import Optional, Union
@@ -12,6 +12,9 @@ import json
 import time
 import random
 import httpx
+
+from nonebot.plugin import PluginMetadata
+
 
 require("nonebot_plugin_saa")
 from nonebot_plugin_saa import Text, Image
@@ -145,8 +148,8 @@ history_lens = plugin_config.reply_lens
 reply_pro = plugin_config.reply_pro
 whitelsit = plugin_config.random_re_g
 
-# meme_url = plugin_config.random_meme_url
-# meme_token = plugin_config.random_meme_token
+meme_url = plugin_config.random_meme_url
+meme_token = plugin_config.random_meme_token
 
 meme_enable = plugin_config.meme_enable
 
@@ -155,8 +158,11 @@ logger.info("随机回复插件使用prompt："+ prompt)
 
 
 async def random_rule(event: GroupMessageEvent) -> bool:
-    if str(event.group_id) in whitelsit and random.random() < reply_pro:
-        return True
+    group_id = str(event.group_id)
+    if group_id in whitelsit:
+        # 优先使用分群配置的回复概率
+        group_pro = plugin_config.group_reply_pro.get(group_id, reply_pro)
+        return random.random() < group_pro
     return False
 
 
@@ -170,41 +176,42 @@ random_reply = on_message(
     priority=999, rule=Rule(random_rule), block=True, permission=GROUP
 )
 
-to_me_reply = on_message(
-    rule=Rule(to_me_rule) & to_me(), priority=998, block=True, permission=GROUP
-)
+# LLM表情包
+async def generate_image_LLM(prompt):
+    url = meme_url
+    headers = {
+        "Authorization": f"Bearer {meme_token}",
+        "Content-Type": "application/json",
+    }
+    data = {"model": "6615735eaa7af4f70cf3a872", "prompt": "为下面的聊天回复生成一个表情包：" + prompt,"stream": False}
+#     {
+#     "model": "glm-4-plus",
+#     "messages": [
+#         {
+#             "role": "user",
+#             "content": "你叫什么？"
+#         }
+#     ],
+#     "stream": False
+# }
 
-
-## LLM表情包
-# async def generate_image(prompt):
-#     url = meme_url
-#     headers = {
-#         "Authorization": f"Bearer {meme_token}",
-#         "Content-Type": "application/json",
-#     }
-#     data = {"model": "6615735eaa7af4f70cf3a872", "prompt": prompt}
-
-#     try:
-#         async with httpx.AsyncClient(timeout=60) as client:
-#             response = await client.post(url, headers=headers, json=data)
-#             response.raise_for_status()
-#             result = response.json()
-#             if "data" in result and len(result["data"]) > 0:
-#                 return result["data"][0]["url"]
-#             else:
-#                 logger.error("生成失败，响应数据:", result)
-#     except httpx.RequestError as e:
-#         logger.error(f"请求错误: {e}")
-#     except httpx.HTTPStatusError as e:
-#         logger.error(f"HTTP 错误响应: {e.response.status_code}")
-#     except Exception as e:
-#         logger.error(f"生成图片未知错误: {e}")
-#         return None
-#     return None
-
-import httpx
-import random
-import asyncio
+    try:
+        async with httpx.AsyncClient(timeout=60) as client:
+            response = await client.post(url, headers=headers, json=data)
+            response.raise_for_status()
+            result = response.json()
+            if "data" in result and len(result["data"]) > 0:
+                return result["data"][0]["url"]
+            else:
+                logger.error("生成失败，响应数据:", result)
+    except httpx.RequestError as e:
+        logger.error(f"请求错误: {e}")
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP 错误响应: {e.response.status_code}")
+    except Exception as e:
+        logger.error(f"生成图片未知错误: {e}")
+        return None
+    return None
 
 async def generate_image(content):
     url = f"https://doutu.lccyy.com/doutu/items?keyword={content}&pageNum=1&pageSize=30"
@@ -267,8 +274,6 @@ def convert_chat_history(history):
         result.append(json_str[1:-1])
     return "\n".join(result)
 
-
-@to_me_reply.handle()
 @random_reply.handle()
 async def handle(
     bot: Bot, event: GroupMessageEvent, user_info: UserInfo = BotUserInfo()
@@ -285,23 +290,35 @@ async def handle(
     except Exception as e:
         logger.error("随机回复插件出错" + str(e))
         return
-    # if meme_url == "":
-    #     await Text(reply).finish()
+
     if not meme_enable:
         await Text(reply).finish()
     
     else:
         try:
             await Text(reply).send()
-            if image_url := await generate_image(reply):
-                await Image(image_url).finish()
+            if meme_url == "":
+                if image_url := await generate_image(reply):
+                    await Image(image_url).finish()
+            else:
+                if image_url := await generate_image_LLM(reply):
+                    await Image(image_url).finish()
         except FinishedException:
             raise
         except Exception as e:
             logger.error(f"消息处理异常: {e}")
             return
 
+if plugin_config.group_reply_prefix:
+    prefix_reply = on_startswith(plugin_config.group_reply_prefix, block=True, priority=1)
+    prefix_reply.append_handler(handle)
 
+else:
+    to_me_reply = on_message(rule=Rule(to_me_rule), priority=998, block=True, permission=GROUP
+)
+    to_me_reply.append_handler(handle)
+
+    
 ## 参考了聊天记录总结插件内获取聊天记录的代码
 async def get_history_chat(bot: Bot, group_id: int):
     messages = []
