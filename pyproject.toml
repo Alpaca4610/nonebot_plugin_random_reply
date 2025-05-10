@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nonebot-plugin-random-reply"
-version = "0.5.0"
+version = "0.5.1"
 description = "随机攻击群友插件"
 authors = ["Alpaca <202396298@qq.com>"]
 license = "MIT"

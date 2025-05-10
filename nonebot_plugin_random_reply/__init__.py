@@ -1,7 +1,7 @@
 from .config import Config, ConfigError
 from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, GROUP
 from nonebot.log import logger
-from nonebot.rule import Rule
+from nonebot.rule import Rule, to_me
 from nonebot.plugin import PluginMetadata
 from nonebot import on_message, require, get_plugin_config, on_startswith
 from nonebot.exception import FinishedException
@@ -184,16 +184,6 @@ async def generate_image_LLM(prompt):
         "Content-Type": "application/json",
     }
     data = {"model": "6615735eaa7af4f70cf3a872", "prompt": "为下面的聊天回复生成一个表情包：" + prompt,"stream": False}
-#     {
-#     "model": "glm-4-plus",
-#     "messages": [
-#         {
-#             "role": "user",
-#             "content": "你叫什么？"
-#         }
-#     ],
-#     "stream": False
-# }
 
     try:
         async with httpx.AsyncClient(timeout=60) as client:
@@ -309,12 +299,12 @@ async def handle(
             logger.error(f"消息处理异常: {e}")
             return
 
-if plugin_config.group_reply_prefix:
+if plugin_config.group_reply_prefix != "":
     prefix_reply = on_startswith(plugin_config.group_reply_prefix, block=True, priority=1)
     prefix_reply.append_handler(handle)
 
 else:
-    to_me_reply = on_message(rule=Rule(to_me_rule), priority=998, block=True, permission=GROUP
+    to_me_reply = on_message(rule=Rule(to_me_rule) & to_me(), priority=998, block=True, permission=GROUP
 )
     to_me_reply.append_handler(handle)
 
