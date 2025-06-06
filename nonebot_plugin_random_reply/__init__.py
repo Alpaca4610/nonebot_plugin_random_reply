@@ -85,7 +85,9 @@ class AIGenerator:
 在下面的历史聊天记录中，你在群聊中的昵称为{name}，现在请处理最新消息：\n{history}"""
 
         try:
-            async with httpx.AsyncClient(timeout=120) as client:
+            async with httpx.AsyncClient(
+                proxy=plugin_config.PROXY if plugin_config.PROXY else None, timeout=300
+            ) as client:
                 response = await client.post(
                     api_url,
                     json={
