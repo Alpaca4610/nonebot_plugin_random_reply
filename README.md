@@ -69,6 +69,7 @@ oneapi_model = "deepseek-chat" # 使用的语言大模型，建议使用ds-v3模
 
 gemini_model = "gemini-2.0-flash" # Gemini模型，不填默认使用gemini-2.0-flash达到较好的效果
 gemini_key = ""  # Gemini KEY
+gemini_proxy = "" # Gemini代理
 
 random_re_g = ["123456789","987654321"]  # 启用随机回复的群聊白名单
 ```

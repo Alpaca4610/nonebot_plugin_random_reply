@@ -8,6 +8,7 @@ class Config(BaseModel):
 
     gemini_model: Optional[str] = "gemini-2.0-flash" # Gemini模型
     gemini_key: Optional[str] = ""  # Gemini KEY
+    gemini_proxy: Optional[str] = ""  # Gemini 代理
 
     random_re_g: List[str] = [""]  # 启用随机回复的白名单
     

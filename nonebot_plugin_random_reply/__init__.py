@@ -86,7 +86,7 @@ class AIGenerator:
 
         try:
             async with httpx.AsyncClient(
-                proxy=plugin_config.PROXY if plugin_config.PROXY else None, timeout=300
+                proxy=plugin_config.gemini_proxy if plugin_config.gemini_proxy else None, timeout=300
             ) as client:
                 response = await client.post(
                     api_url,
