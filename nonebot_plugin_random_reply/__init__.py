@@ -1,3 +1,4 @@
+import re
 from .config import Config, ConfigError
 from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, GROUP
 from nonebot.log import logger
@@ -35,6 +36,13 @@ __plugin_meta__ = PluginMetadata(
     supported_adapters={"~onebot.v11"},
 )
 
+
+def clean_model_output(raw_output):
+    # 移除思考过程标记及内容（</think>...</think>）
+    cleaned = re.sub(r'</think>.*?</think>', '', raw_output, flags=re.DOTALL)
+    # 移除多余空行和空格
+    cleaned = re.sub(r'\n+', '\n', cleaned).strip()
+    return cleaned
 
 class AIGenerator:
     def __init__(self, plugin_config):
@@ -276,6 +284,8 @@ async def handle(
             logger.error("随机回复插件未获取到聊天记录")
             return
         reply = await get_res(messages, user_info.user_displayname)
+        reply = clean_model_output(reply)
+        
         if not reply:
             logger.error("随机回复插件生成回复失败")
             return
