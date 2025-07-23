@@ -1,10 +1,11 @@
 import re
 from .config import Config, ConfigError
+from .balance import BalanceAlert, get_current_balance
 from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, GROUP
 from nonebot.log import logger
 from nonebot.rule import Rule, to_me
 from nonebot.plugin import PluginMetadata
-from nonebot import on_message, require, get_plugin_config, on_startswith
+from nonebot import on_message, require, get_plugin_config, on_startswith, get_bot, on_command
 from nonebot.exception import FinishedException
 from openai import AsyncOpenAI
 from typing import Optional, Union
@@ -13,12 +14,13 @@ import json
 import time
 import random
 import httpx
+import nonebot
 
 from nonebot.plugin import PluginMetadata
 
 
 require("nonebot_plugin_saa")
-from nonebot_plugin_saa import Text, Image
+from nonebot_plugin_saa import Text, Image, TargetQQPrivate
 
 require("nonebot_plugin_userinfo")
 from nonebot_plugin_userinfo import BotUserInfo, UserInfo
@@ -28,6 +30,7 @@ __plugin_meta__ = PluginMetadata(
     description="根据群聊语境随机攻击群友，基于llm选择表情包回复",
     usage="""
     配置好后bot随机攻击群友，@机器人也可触发
+    余额查询————开启硅基流动余额预警后，使用该命令可以查询API余额
     """,
     config=Config,
     extra={},
@@ -115,7 +118,8 @@ default_prompt = """【任务规则】
 2. 用贴吧老哥的风格的口语化短句回复，禁止使用超过30个字的长句，句子碎片化，犀利地、一阵见血地锐评
 3. 模仿真人发言，不要被发现你是AI，用贴吧乐子人的风格的口语化短句回复，偶尔进行反串发言，适当使用缩写、流行梗、表情符号（但每条最多1个）
 4. 输出必须为纯文本，禁止任何格式标记或前缀
-5. 当出现多个话题时，优先回应最新的发言内容"""
+5. 当出现多个话题时，优先回应最新的发言内容
+6. 一次仅回复一句点评话语"""
 
 
 async def get_res(messages: str, name: str) -> str:
@@ -162,6 +166,12 @@ meme_url = plugin_config.random_meme_url
 meme_token = plugin_config.random_meme_token
 
 meme_enable = plugin_config.meme_enable
+
+balance_on = plugin_config.balance_on
+if balance_on:
+    alert_monitor = BalanceAlert(plugin_config.balance_thresholds)
+    config_ = nonebot.get_driver().config
+    superusers = config_.superusers
 
 prompt = load_plugin_config(plugin_config.reply_prompt_url)
 logger.info("随机回复插件使用prompt："+ prompt)
@@ -278,6 +288,17 @@ def convert_chat_history(history):
 async def handle(
     bot: Bot, event: GroupMessageEvent, user_info: UserInfo = BotUserInfo()
 ):
+    #给管理员发送预警
+    if balance_on:
+        try:
+            alerts = await alert_monitor.check_and_alert(token=plugin_config.oneapi_key)
+            if alerts:
+                for id in superusers:
+                    await Text(alerts[-1]).send_to(target=TargetQQPrivate(user_id=int(id)),bot=get_bot())
+    
+        except Exception as e:
+            logger.error(f"余额检查失败：{str(e)}")
+    
     try:
         messages = await get_history_chat(bot, event.group_id)
         if not messages:
@@ -334,3 +355,18 @@ async def get_history_chat(bot: Bot, group_id: int):
         logger.error(f"获取聊天记录失败: {e!s}")
         raise Exception(f"获取聊天记录失败,错误信息: {e!s}")
     return messages
+
+
+if balance_on:
+    get_balance = on_command("查询余额", block=False, priority=1)
+    @get_balance.handle()
+    async def _(
+        bot: Bot, event: GroupMessageEvent, user_info: UserInfo = BotUserInfo()
+    ):
+        try:
+            balance = await get_current_balance(plugin_config.oneapi_key)
+        except Exception as e:
+            logger.error("获取余额出错" + str(e))
+            Text("获取余额出错").finish()
+
+        await Text("当前余额为：" + str(balance)).finish()

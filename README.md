@@ -88,12 +88,16 @@ LLM表情包配置（可以不配置，不影响文字回复，开启表情包�
  ```
 random_meme_url = "http://xxx.xxx.xxx.xxx:xxxx/v1/images/generations"    # 用于llm选择表情包的glm-free-api地址
 random_meme_token = ""     # glm-free-api的token
+
+balance_on = False     # 使用硅基流动API时，是否开启余额查询功能
+balance_thresholds = [10.0, 5.0, 2.0]       # 使用硅基流动API并开启余额查询功能后，余额预警阈值列表
 ```
 
 # 使用方法
 - 填好配置文件和群聊白名单后，bot就会根据当前话题随机攻击群友
 - 不填写表情包发送相关配置不会发送表情包
 - @机器人会根据本条信息回复，若配置了触发前缀则@不会回复
+- 余额查询————开启硅基流动余额预警后，使用该命令可以查询API余额
 
 # 自定义prompt范例
 

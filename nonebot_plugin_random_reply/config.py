@@ -25,5 +25,9 @@ class Config(BaseModel):
 
     # 表情包开关
     meme_enable: bool = True # 是否使用第三方斗图API回复表情包
+
+    #硅基流动余额查询
+    balance_on: bool = False
+    balance_thresholds : Optional[List[float]] = [10.0, 5.0, 2.0]
 class ConfigError(Exception):
     pass
